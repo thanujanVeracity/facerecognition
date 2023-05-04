@@ -19,16 +19,17 @@ from losses.loss import TripletLoss
 class Trainer:
     def __init__(self,  train_data: Dataset, valid_data: Dataset, batch_size: int ,backbone: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, distance_measure: DistanceMeasure, device, num_workers=1, log_dir=None):
         
+        self.batch_size = batch_size
         self.train_data = train_data
         self.valid_data = valid_data
         self.num_workers = num_workers
         self.distance_measure = distance_measure
         self.loss = loss(margin)
         self.model = SiameseNetwork( backbone= backbone, distance_measure = self.distance_measure, margin=margin).to(device=device)
-        self.optimizer = optimizer("/home_2/thajan/Desktop/faceregognition/mine/optimizer/optimizer_config.yaml").get_optimizer(params=self.model.parameters())
+        self.optimizer = optimizer("./optimizer/optimizer_config.yaml").get_optimizer(params=self.model.parameters())
         self.device = device
         
-    def _train_epoch(self, epoch, generate):
+    def _train_epoch(self, epoch):
         # Set the model to train mode(this is the default)
         self.model.train()
         
@@ -91,7 +92,7 @@ class Trainer:
             # Step the optimizer (gradient decent)
             self.optimizer.step()
             
-    def _valid_epoch(self, epoch, generate):
+    def _valid_epoch(self, epoch):
         # Set the model to evaluate mode
         self.model.eval()
         metric = []
