@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 b6d44acc5c81c9a2b6144f6623a011d2d49386ac thanujan <thanujant@veracitygp.com> 1682715344 +0530	commit (initial): feat: add dataset and test
+b6d44acc5c81c9a2b6144f6623a011d2d49386ac a8b6b39904a485eef9124879ae96da861d4b4678 thanujan <thanujant@veracitygp.com> 1682833165 +0530	commit: feat: add dataloader
+a8b6b39904a485eef9124879ae96da861d4b4678 438ffab444aaa401d5aa3c294159e655d9f55638 thanujan <thanujant@veracitygp.com> 1682834118 +0530	commit: feat: add mobilenetv2 backbone
+438ffab444aaa401d5aa3c294159e655d9f55638 616e80e845128deb518dee5d7a201795d92e04dd thanujan <thanujant@veracitygp.com> 1682843581 +0530	commit: test: test the trainer
+616e80e845128deb518dee5d7a201795d92e04dd 7b0f479b1c6db14d928febec97a94e13389dc541 thanujan <thanujant@veracitygp.com> 1682859324 +0530	commit: test: test the training algorithm
+7b0f479b1c6db14d928febec97a94e13389dc541 9bc3db5ef31413f0e6b88a8a5e69950e4cb10f52 thanujan <thanujant@veracitygp.com> 1682860754 +0530	commit: modularized the train.py
