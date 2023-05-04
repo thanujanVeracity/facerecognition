@@ -102,10 +102,9 @@ class TripletFaceIterator:
                 root_dir: str, 
                 csv_name: str,
                 generate: bool,
-                num_triplets, 
-                epoch, 
-                num_human_identities_per_batch=32,
-                triplet_batch_size=544,
+                steps_per_epoch: int,
+                batch_size: int,
+                num_human_identities_per_batch: int,
                 triplets_file=None, 
                 transform=None):
         
@@ -151,10 +150,9 @@ class TripletFaceIterator:
 
         
         self.root_dir = root_dir
-        self.num_triplets = num_triplets
+        self.num_triplets =  steps_per_epoch * batch_size,
         self.num_human_identities_per_batch = num_human_identities_per_batch
-        self.triplet_batch_size = triplet_batch_size
-        self.epoch = epoch
+        self.triplet_batch_size = batch_size
         self.transform = transform
         
         # Create a CSV file and dataframe that includes information about the face dataset and its corresponding images.

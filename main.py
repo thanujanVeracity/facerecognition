@@ -3,7 +3,7 @@ from torchvision import transforms
 from optimizer.adam_optimizer import AdamOptimizer
 from train import Trainer
 from dataLoader.face_dataloader import FaceDataLoader
-from dataLoader.face_dataset import TripletFaceDatset
+from dataLoader.face_dataset import TripletFaceIterator
 from losses.loss import TripletLoss
 from distance_measure.distance_measure import L2Distance
 from models.mobilenetv2 import MobileNetV2Triplet
@@ -45,7 +45,23 @@ if __name__ == "__main__":
     
     # Then trainer is called to train the model. But here Trainer class is calling the Dataset  inside, which brokes the SOLID rule
     # dataloader = FaceDataLoader( dataset_dir, 6, 2, 2,None, 0.8,0.1, transform)
-    trainer = Trainer(train_root = "train", valid_root = "valid", transform= transform, step_per_epoch = 100 , batch_size = 32, num_triplets = 3200 , backbone= MobileNetV2Triplet, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, distance_measure= L2Distance, device="cpu" ,log_dir=".")
+    
+    train_root = "./lfw_funneled/train"
+    
+    steps_per_epoch = 32
+    batch_size = 32
+    num_human_identities_per_batch = 32
+    
+    dataset_iterator = TripletFaceIterator(
+            root_dir= train_root,
+            csv_name=os.path.join(train_root, "train.csv"),
+            steps_per_epoch = steps_per_epoch,
+            batch_size= batch_size,
+            num_human_identities_per_batch=batch_size,
+            transform=transform
+            )
+    
+    trainer = Trainer( train_data= next(dataset_iterator), valid_data = None, batch_size = batch_size, transform= transform, backbone= MobileNetV2Triplet, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, distance_measure= L2Distance, device="cpu" ,log_dir=".")
     
     #Then i am training the model.
     trainer.train(epochs= 2, validate_every=1)

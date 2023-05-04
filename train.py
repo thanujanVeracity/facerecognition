@@ -13,25 +13,15 @@ from SiameseNetwork import SiameseNetwork
 from losses.loss import Loss
 from torch.utils.data import DataLoader
 from optimizer.base_optimizer import BaseOptimizer
-
+from torch.utils.data import Dataset
 from losses.loss import TripletLoss
 
 class Trainer:
-    def __init__(self, train_root: str, valid_root: str, transform, step_per_epoch: int, batch_size: int, num_triplets:int, backbone: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, distance_measure: DistanceMeasure, device, num_workers=1, log_dir=None):
+    def __init__(self,  train_data: Dataset, valid_data: Dataset, batch_size: int ,backbone: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, distance_measure: DistanceMeasure, device, num_workers=1, log_dir=None):
         
-
-        self.train_root: str = train_root
-        self.valid_root: str = valid_root
-        self.steps_per_epoch: int = step_per_epoch
-        self.batch_size: int = batch_size
-        self.num_triplets = num_triplets
-        self.num_human_identities_per_batch = batch_size
+        self.train_data = train_data
+        self.valid_data = valid_data
         self.num_workers = num_workers
-        self.transform = transform
-        
-        
-        
-        
         self.distance_measure = distance_measure
         self.loss = loss(margin)
         self.model = SiameseNetwork( backbone= backbone, distance_measure = self.distance_measure, margin=margin).to(device=device)
@@ -51,23 +41,10 @@ class Trainer:
         # So I need to generate a new set of triplets from the unseen data directory for the validation.
         
         
-        train_dataloader = DataLoader(dataset = TripletFaceDatset(
-            root_dir= self.train_root,
-            csv_name=os.path.join(self.train_root, "train.csv"),
-            num_triplets=self.steps_per_epoch * self.batch_size,
-            num_human_identities_per_batch=self.num_human_identities_per_batch,
-            triplet_batch_size=self.batch_size,
-            transform=self.transform,
-            epoch= epoch,
-            generate = generate,
-            ),
+        train_dataloader = DataLoader(dataset = self.train_data,
             batch_size = self.batch_size,
             num_workers = self.num_workers,
             shuffle=False)
-        
-        
-        
-        
         
 
         num_valid_training_triplets = 0
@@ -120,15 +97,7 @@ class Trainer:
         metric = []
         losses = []
         
-        valid_dataloader = DataLoader(dataset = TripletFaceDatset(
-            root_dir= self.valid_root,
-            num_triplets=self.steps_per_epoch * self.batch_size,
-            num_human_identities_per_batch=self.num_human_identities_per_batch,
-            triplet_batch_size=self.batch_size,
-            transform=self.transform,
-            epoch=epoch,
-            generate = generate,
-            ),
+        valid_dataloader = DataLoader(dataset = self.valid_data,
             batch_size = self.batch_size,
             num_workers = self.num_workers,
             shuffle=False)
@@ -170,18 +139,16 @@ class Trainer:
             
             
             # Train the model for one epoch
-            self._train_epoch(epoch=epoch,generate=generate)
+            self._train_epoch(epoch=epoch)
             
-            if epoch % validate_every == 0:
+            if (epoch % validate_every )and (self.valid_data != None) == 0:
                 
                 #Do evaluation on validation dataset
                 self.model.eval()
                         
                 with torch.no_grad():
-                    self._valid_epoch(epoch=epoch,generate=generate)   
+                    self._valid_epoch(epoch=epoch)   
                     
-            if(generate == True):
-                generate = False
 
             
         
