@@ -19,7 +19,84 @@ import glob
 import time
 import sys
 
-class TripletFaceDatset(Dataset):
+
+class TripletsFaceDataset(Dataset):
+    
+    def __init__(self, triplets: list):
+        """This class implements tr
+
+        Args:
+            triplets (list): _description_
+        """
+        
+        self.triplets = triplets
+        
+        return
+        
+    def __len__(self):
+        if self.training_triplets:
+            return len(self.training_triplets)
+        else:
+            return 0
+    
+    # Added this method to allow .jpg, .png, and .jpeg image support
+    def _add_extension(self, path):
+        
+        
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+        # print(os.listdir(path))
+        
+        if os.path.exists(path+'.jpg'):
+            return path + '.jpg'
+        elif os.path.exists(path + '.png'):
+            return path + '.png'
+        elif os.path.exists(path + '.jpeg'):
+            return path + '.jpeg'
+        else:
+            raise RuntimeError('No file "{}" with extension .png or .jpg or .jpeg'.format(path))
+    
+        return
+ 
+    
+    def __getitem__(self, idx):
+        if self.training_triplets:
+            
+
+            anc_id, pos_id, neg_id, pos_class, neg_class, pos_name, neg_name = self.training_triplets[idx]
+
+            anc_img = self._add_extension(os.path.join(self.root_dir, str(pos_name), str(anc_id)))
+            pos_img = self._add_extension(os.path.join(self.root_dir, str(pos_name), str(pos_id)))
+            neg_img = self._add_extension(os.path.join(self.root_dir, str(neg_name), str(neg_id)))
+
+            # Modified to open as PIL image in the first place
+            anc_img = Image.open(anc_img)
+            pos_img = Image.open(pos_img)
+            neg_img = Image.open(neg_img)
+
+            pos_class = torch.from_numpy(np.array([pos_class]).astype('long'))
+            neg_class = torch.from_numpy(np.array([neg_class]).astype('long'))
+
+            sample = {
+                'anc_img': anc_img,
+                'pos_img': pos_img,
+                'neg_img': neg_img,
+                'pos_class': pos_class,
+                'neg_class': neg_class
+            }
+
+            if self.transform:
+                sample['anc_img'] = self.transform(sample['anc_img'])
+                sample['pos_img'] = self.transform(sample['pos_img'])
+                sample['neg_img'] = self.transform(sample['neg_img'])
+
+            return sample
+        else:
+            None
+        
+        return sample   
+
+class TripletFaceIterator:
 
     def __init__(self,
                 root_dir: str, 
@@ -32,7 +109,29 @@ class TripletFaceDatset(Dataset):
                 triplets_file=None, 
                 transform=None):
         
-        """_summary_
+        """
+        This code defines a custom dataset class TripletFaceDataset that generates triplets for triplet loss 
+        based on a given directory of face images or from the face images csv file.
+        
+        |face_images
+            |person1
+                |image
+                |image
+            |person2
+                |image
+                |image
+            |person3
+                |image
+                |image
+                
+                
+        This class generate a new triplet dataset when each time it is called
+        
+        The class generates a dictionary that maps each class name to a list of image ids and uses this dictionary
+        to randomly select anchor, positive, and negative images for each triplet. 
+        
+        Additionally, it can optionally load pre-generated triplets or a CSV file with metadata. 
+        Finally, it has an option for applying image transformations during training.
 
         Args:
             root_dir (_type_): Absolute path to dataset.
@@ -58,9 +157,11 @@ class TripletFaceDatset(Dataset):
         self.epoch = epoch
         self.transform = transform
         
+        # Create a CSV file and dataframe that includes information about the face dataset and its corresponding images.
         if(not os.path.isfile(csv_name)):
-            # Gather structre of the folder into a dataframe 
             self.dir_detail_df = self._generate_csv_file(root_dir, csv_name=csv_name)
+            
+        # Load the dataset frame from the CSV file which contains the face dataset details
         else:
             print("Loading pre-generated csv file...")
             self.dir_detail_df = pd.read_csv(csv_name)
@@ -73,16 +174,14 @@ class TripletFaceDatset(Dataset):
         self.df_dict_class_reversed = {value: key for (key, value) in df_dict["class"].items()}
         self.triplets_file = os.path.join(root_dir, "triplets.npy")
         
-        if generate or not os.path.exists(self.triplets_file):
-            self.training_triplets = self._generate_triplets()
-        else:
-            print("Loading pre-generated triplets file ...")
-            self.training_triplets = np.load(triplets_file)
+        # if generate or not os.path.exists(self.triplets_file):
+        #     self.training_triplets = self._generate_triplets()
+        # else:
+        #     print("Loading pre-generated triplets file ...")
+        #     self.training_triplets = np.load(triplets_file)
 
         return  
     
-    def get_dir_detail_df(self):
-        return self.dir_detail_df
     
     def _makeDictionaryForFaceClass(self):
         """
@@ -201,64 +300,6 @@ class TripletFaceDatset(Dataset):
 
         return triplets
     
-    # Added this method to allow .jpg, .png, and .jpeg image support
-    def add_extension(self, path):
-        
-        
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-        # print(os.listdir(path))
-        
-        if os.path.exists(path+'.jpg'):
-            return path + '.jpg'
-        elif os.path.exists(path + '.png'):
-            return path + '.png'
-        elif os.path.exists(path + '.jpeg'):
-            return path + '.jpeg'
-        else:
-            raise RuntimeError('No file "{}" with extension .png or .jpg or .jpeg'.format(path))
-               
-    def __getitem__(self, idx):
-        if self.training_triplets:
-            
-
-            anc_id, pos_id, neg_id, pos_class, neg_class, pos_name, neg_name = self.training_triplets[idx]
-
-            anc_img = self.add_extension(os.path.join(self.root_dir, str(pos_name), str(anc_id)))
-            pos_img = self.add_extension(os.path.join(self.root_dir, str(pos_name), str(pos_id)))
-            neg_img = self.add_extension(os.path.join(self.root_dir, str(neg_name), str(neg_id)))
-
-            # Modified to open as PIL image in the first place
-            anc_img = Image.open(anc_img)
-            pos_img = Image.open(pos_img)
-            neg_img = Image.open(neg_img)
-
-            pos_class = torch.from_numpy(np.array([pos_class]).astype('long'))
-            neg_class = torch.from_numpy(np.array([neg_class]).astype('long'))
-
-            sample = {
-                'anc_img': anc_img,
-                'pos_img': pos_img,
-                'neg_img': neg_img,
-                'pos_class': pos_class,
-                'neg_class': neg_class
-            }
-
-            if self.transform:
-                sample['anc_img'] = self.transform(sample['anc_img'])
-                sample['pos_img'] = self.transform(sample['pos_img'])
-                sample['neg_img'] = self.transform(sample['neg_img'])
-
-            return sample
-        else:
-            None
-
-    def __len__(self):
-        if self.training_triplets:
-            return len(self.training_triplets)
-        else:
-            return 0
-    
     def _generate_csv_file(self, dataroot, csv_name):
         """Generates a csv file containing the image paths of the glint360k dataset for use in triplet selection in
         triplet loss training.
@@ -305,29 +346,44 @@ class TripletFaceDatset(Dataset):
 
         return dataframe
 
-    def clean(self):
-        try :
-            self.root_dir = None
-            self.num_triplets = None
-            self.num_human_identities_per_batch = None
-            self.triplet_batch_size = None
-            self.epoch = None
-            self.transform = None
-            self.dir_detail_df = None
+    def __iter__(self):
+      self.a = 1
+      return self
+  
+    def __next__(self):
+        if self.a == 1:
+            self.training_triplets = self._generate_triplets()
+            self.a = 0
+            return TripletsFaceDataset(self.training_triplets)
+        else:
+            raise StopIteration
+        
+    # def get_dir_detail_df(self):
+    #     return self.dir_detail_df
+    
+    #  def clean(self):
+    #     try :
+    #         self.root_dir = None
+    #         self.num_triplets = None
+    #         self.num_human_identities_per_batch = None
+    #         self.triplet_batch_size = None
+    #         self.epoch = None
+    #         self.transform = None
+    #         self.dir_detail_df = None
             
-            self.df_dict_class_name = None
-            self.df_dict_id = None
-            self.df_dict_class_reversed = None
+    #         self.df_dict_class_name = None
+    #         self.df_dict_id = None
+    #         self.df_dict_class_reversed = None
             
-            files = glob.glob('datasets/generated_triplets/*')
-            for f in files:
-                os.remove(f)
+    #         files = glob.glob('datasets/generated_triplets/*')
+    #         for f in files:
+    #             os.remove(f)
         
         
-            return True
+    #         return True
         
-        except:
-            print("isse")
+    #     except:
+    #         print("isse")
         
         
         

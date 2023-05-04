@@ -44,7 +44,13 @@ class Trainer:
         
         #valid data should be checked from the unseen data directory
         
-        # for each epcoh new set of dataset should be generated
+        # for each epoch new set of triplet should be generated
+        # I can randomly choose data from the face dataset and generate a new set of triplet
+        # But for the validation set i cannot generate a new set of tripletes from the same directory 
+        # because it should be from unseen data directory
+        # So I need to generate a new set of triplets from the unseen data directory for the validation.
+        
+        
         train_dataloader = DataLoader(dataset = TripletFaceDatset(
             root_dir= self.train_root,
             csv_name=os.path.join(self.train_root, "train.csv"),
