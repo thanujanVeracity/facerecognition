@@ -101,12 +101,12 @@ class TripletFaceIterator:
     def __init__(self,
                 root_dir: str, 
                 csv_name: str,
-                generate: bool,
                 steps_per_epoch: int,
                 batch_size: int,
                 num_human_identities_per_batch: int,
                 triplets_file=None, 
                 transform=None):
+        self.a = 1
         
         """
         This code defines a custom dataset class TripletFaceDataset that generates triplets for triplet loss 
@@ -150,7 +150,7 @@ class TripletFaceIterator:
 
         
         self.root_dir = root_dir
-        self.num_triplets =  steps_per_epoch * batch_size,
+        self.num_triplets =  steps_per_epoch * batch_size
         self.num_human_identities_per_batch = num_human_identities_per_batch
         self.triplet_batch_size = batch_size
         self.transform = transform
@@ -290,7 +290,7 @@ class TripletFaceIterator:
 
         print("Saving training triplets list in 'datasets/generated_triplets' directory ...")
         np.save('datasets/generated_triplets/epoch_{}_training_triplets_{}_identities_{}_batch_{}.npy'.format(
-                self.epoch, self.num_triplets, self.num_human_identities_per_batch, self.triplet_batch_size
+                1, self.num_triplets, self.num_human_identities_per_batch, self.triplet_batch_size
             ),triplets
         )
 

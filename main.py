@@ -2,7 +2,7 @@ import os
 from torchvision import transforms
 from optimizer.adam_optimizer import AdamOptimizer
 from train import Trainer
-from dataLoader.face_dataloader import FaceDataLoader
+# from dataLoader.face_dataloader import FaceDataLoader
 from dataLoader.face_dataset import TripletFaceIterator
 from losses.loss import TripletLoss
 from distance_measure.distance_measure import L2Distance
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             transform=transform
             )
     
-    trainer = Trainer( train_data= next(dataset_iterator), valid_data = None, batch_size = batch_size, transform= transform, backbone= MobileNetV2Triplet, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, distance_measure= L2Distance, device="cpu" ,log_dir=".")
+    trainer = Trainer( train_data= next(dataset_iterator), valid_data = None, batch_size = batch_size,  backbone= MobileNetV2Triplet, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, distance_measure= L2Distance, device="cpu" ,log_dir=".")
     
     #Then i am training the model.
     trainer.train(epochs= 2, validate_every=1)

@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from tqdm import tqdm
-from dataLoader.face_dataset import TripletFaceDatset
+# from dataLoader.face_dataset import TripletFaceDatset
 from distance_measure.distance_measure import DistanceMeasure, L2Distance
 from SiameseNetwork import SiameseNetwork
 from losses.loss import Loss
