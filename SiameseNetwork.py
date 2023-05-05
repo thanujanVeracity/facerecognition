@@ -20,9 +20,15 @@ class SiameseNetwork(nn.Module):
         
     def forward(self, x1, x2, x3):
         
-        x1_emp = self.backbone(x1)
-        x2_emp = self.backbone(x2)
-        x3_emp = self.backbone(x3)
+        x1_len = x1.shape[0]
+        x2_len = x2.shape[0]
+        x3_len = x3.shape[0]
+        
+        embs = self.backbone(torch.cat((x1,x2,x3)))
+        
+        x1_emp = embs[:x1_len]
+        x2_emp = embs[x1_len:x1_len+x2_len]
+        x3_emp = embs[x1_len+x2_len:]
         
         #calculate the possitve distance
         pos_dist = self.distance_measure(x1_emp, x2_emp)
@@ -55,6 +61,8 @@ class SiameseNetwork(nn.Module):
         pos_dist = self.distance_measure(x1_emp_valid, x2_emp_valid)
         neg_dist = self.distance_measure(x1_emp_valid, x3_emp_valid)
         
+        print(pos_dist[0], neg_dist[0])
+        
         
         return pos_dist, neg_dist
     
@@ -63,9 +71,25 @@ if __name__ == "__main__":
     model = SiameseNetwork(
         backbone= MobileNetV2Triplet, distance_measure=L2Distance, margin=0.1)
     
-    x = torch.randn(10, 3, 6, 6)
-    y = torch.randn(10, 3, 6, 6)
-    z = torch.randn(10, 3, 6, 6)
+    x = torch.randn(2, 3, 2, 2)
+    y = torch.randn(2, 3, 2, 2)
+    z = torch.randn(2, 3, 2, 2)
+    
+    x_len = x.shape[0] 
+    y_len = y.shape[0]   
+    z_len = z.shape[0]   
+    # print(torch.cat((x,y,z)))
+    # print(torch.cat((x,y,z))[0]==x)
+    
+    print(x.shape[0], y.shape, z.shape)
+    print(".........................")
+    print(x)
+    print(".........................")
+    print(y)
+    print(".........................")
+    print(z)
+    print(".........................")
+    
     
     pos_dist, neg_dist = model.forward(x, y, z)
     

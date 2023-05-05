@@ -51,9 +51,9 @@ if __name__ == "__main__":
     train_root = "./lfw_funneled/train"
     valid_root = "./lfw_funneled/valid"
     
-    steps_per_epoch = 3
-    batch_size = 3
-    num_human_identities_per_batch = 3
+    steps_per_epoch = 32
+    batch_size = 8
+    num_human_identities_per_batch = 100
     margin =0.1
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -81,6 +81,6 @@ if __name__ == "__main__":
     trainer = Trainer( train_iterator = train_dataset_iterator, valid_iterator = valid_dataset_iterator, model = model, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, device = device,log_dir=".")
     
     #Then i am training the model.
-    trainer.train(epochs= 2, batch_size = batch_size, num_workers= 1,validate_every=1)
+    trainer.train(epochs= 300 , batch_size = batch_size, num_workers= 1,validate_every=4)
     
     

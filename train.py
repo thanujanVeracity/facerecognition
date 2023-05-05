@@ -5,7 +5,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
+
 from tqdm import tqdm
 # from dataLoader.face_dataset import TripletFaceDatset
 from distance_measure.distance_measure import DistanceMeasure, L2Distance
@@ -16,6 +16,8 @@ from optimizer.base_optimizer import BaseOptimizer
 from torch.utils.data import Dataset
 from losses.loss import TripletLoss
 
+import torchvision.transforms.functional as F
+from torchvision.utils import save_image
 class Trainer:
     def __init__(self,  train_iterator: Dataset, valid_iterator: Dataset ,model: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, device, num_workers=1, log_dir=None):
         
@@ -48,13 +50,23 @@ class Trainer:
         num_valid_training_triplets = 0
         
         # Loop through the batches
-        for batch, (sample) in enumerate(tqdm(train_dataloader)):
+        for batch, (sample) in enumerate(tqdm(train_dataloader, ascii=' >=')):
             
 
             # Take anchor possitve and negative images
             ancImages = sample["anc_img"].to(self.device)
             posImages = sample["pos_img"].to(self.device)
             negImages = sample["neg_img"].to(self.device)
+            
+            # F.to_pil_image()
+            # F.to_pil_image(posImages[0])
+            # F.to_pil_image(negImages[0])
+            
+            # save_image(ancImages[0].cpu(), "img1.png")
+            # save_image(posImages[0].cpu(), "img2.png")
+            # save_image(negImages[0].cpu(), "img3.png")
+            
+            
 
 
             #! changed
@@ -67,8 +79,12 @@ class Trainer:
             # Do a foraward pass with all images and get the embedding for the images
             pos_dist, neg_dist = self.model(ancImages, posImages, negImages)
             
+            # print(pos_dist[0], neg_dist[0] )
+            
+            
             # Calculate the triplet loss
             loss = self.loss.forward(pos_dist, neg_dist)
+            
             losses.append(loss)
             
             # Calculating number of triplets that met the triplet selection method during the epoch
@@ -85,10 +101,10 @@ class Trainer:
             self.optimizer.step()
         
          # Print training statistics for epoch and add to log
-        print('Epoch {}:\tNumber of valid training triplets in epoch: {}\t AverageLoss {}'.format(
+        print('Epoch {}:\tNumber of valid triplets in epoch: {}\t AverageLoss {}'.format(
                 epoch,
                 num_valid_training_triplets,
-                torch.mean(losses)
+                np.mean(list(map(lambda x: x.cpu().detach().numpy(),losses)))
             )
         )
             
@@ -108,13 +124,16 @@ class Trainer:
 
 
         # Loop through the batches
-        for batch, (sample) in enumerate(tqdm(valid_dataloader)):
+        for batch, (sample) in enumerate(tqdm(valid_dataloader, ascii=' >=')):
             
-
+            
+            
             # Take anchor possitve and negative images
             ancImages = sample["anc_img"].to(self.device)
             posImages = sample["pos_img"].to(self.device)
             negImages = sample["neg_img"].to(self.device)
+            
+            
 
             #! batch size
             # Do a foraward pass with all images and get the embedding for the images
@@ -127,10 +146,10 @@ class Trainer:
             num_valid_validating_triplets += len(pos_dist)
             # metric.append()
          # Print training statistics for epoch and add to log
-        print('Epoch {}:\tNumber of valid training triplets in epoch: {}\t AverageLoss {}'.format(
+        print('Epoch {}:\tNumber of valid triplets in epoch: {}\t AverageLoss {}'.format(
                 epoch,
                 num_valid_validating_triplets,
-                torch.mean(losses)
+                np.mean(list(map(lambda x: x.cpu().detach().numpy(),losses)))
             )
         )
             
@@ -140,16 +159,16 @@ class Trainer:
         
         generate = True
         
-
+        
+        # print( "Total Epochs  : {}".format(epochs))
         # Loop through the epochs
         for epoch in range(epochs):
             
 
-            
             # Train the model for one epoch
             self._train_epoch(epoch=epoch, batch_size= batch_size, num_workers= num_workers)
             
-            if (epoch % validate_every )and (self.valid_data != None) == 0:
+            if (epoch % validate_every ) == 0:
                 
                 #Do evaluation on validation dataset
                 self.model.eval()
@@ -161,8 +180,6 @@ class Trainer:
             
         
            
-
-            return
         
 
 

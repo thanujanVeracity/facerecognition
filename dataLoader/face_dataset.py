@@ -202,18 +202,27 @@ class TripletFaceIterator:
 
     def _generate_triplets(self):
         triplets = []
+        
+        
+        
+        # From this framework, we need to find all the classes that has more than one faces
 
         classes = self.dir_detail_df['class'].unique()
         faceClasses = self._makeDictionaryForFaceClass()
+        groub_by_class_length = self.dir_detail_df.groupby(by=["class"]).apply(lambda x: len(x)) 
+        poss_classes = groub_by_class_length[groub_by_class_length >= 2].index
+        # single_classes = groub_by_class_length[groub_by_class_length == 1].index
         
-        print("\nUnique classes {}".format(classes))
-        print("\nFace classes {}".format(faceClasses))
-        print("\nGenerating {} triplets ...".format(self.num_triplets))
+        
+        
+        # print("\nUnique classes {}".format(classes))
+        # print("\nFace classes {}".format(faceClasses))
+        # print("\nGenerating {} triplets ...".format(self.num_triplets))
 
         numTrainingIterationsPerProcess = self.num_triplets / self.triplet_batch_size
-        print("Number of iterations{}".format(numTrainingIterationsPerProcess))
+        # print("Number of iterations {}".format(numTrainingIterationsPerProcess))
         
-        for training_itr in tqdm(range(int(numTrainingIterationsPerProcess))):
+        for training_itr in range(int(numTrainingIterationsPerProcess)):
 
             """
             For each batch:
@@ -231,9 +240,21 @@ class TripletFaceIterator:
                     - Negative image should have different class as anchor and posstive images by definition
             """
 
+
+            # from classes per batch, we need to get a class one that contains two  faces.
+            # Then only we can take one as possitve and another as Anchor image
+            
+            #for negative image we can take any other class that is not the class we find earlier
+            
             #Randomly choose a set of human identities
-            classesPerBatch = np.random.choice(classes, size=self.num_human_identities_per_batch, replace=False)
-            # print("\nClasses per batch".format(classesPerBatch))
+            #["class1", "class2", "class3"]
+            
+            #When getting a random class i need to make sure that it is contain a class that is having two faces.
+            
+            
+            neg_classes_per_batch = np.random.choice(classes, size=self.num_human_identities_per_batch, replace=False)
+            poss_classes_per_batch = np.random.choice(poss_classes, size=self.num_human_identities_per_batch, replace=False)
+            # print("\nClasses per batch".format(neg_classes_per_batch))
 
 
             # Traverse through the whole batch size
@@ -241,16 +262,19 @@ class TripletFaceIterator:
                 # print("generating triplet number {}".format(triplet))
                 
                 #randomly choose a possitive class and a negative calss
-                pos_class = np.random.choice( classesPerBatch )
-                neg_class = np.random.choice( classesPerBatch )
+                pos_class = np.random.choice( poss_classes_per_batch )
+                neg_class = np.random.choice( neg_classes_per_batch )
 
                 # Make sure to find atleast 2 faces of that possitive class
-                while len(faceClasses[pos_class]) < 2:
-                    pos_class = np.random.choice( classesPerBatch )
+                # while len(faceClasses[pos_class]) < 2:
+                #     print("loop hole1", "classes per batch", classesPerBatch, "posclasse",pos_class, "negclass", neg_class) 
+                #     print(faceClasses[pos_class])
+                    
+                #     pos_class = np.random.choice( classesPerBatch )
 
                 # Make sure to find the different human identies as possitve and negative classes
                 while pos_class == neg_class:
-                    neg_class = np.random.choice( classesPerBatch )
+                    neg_class = np.random.choice( neg_classes_per_batch )
 
 
                 # Instead of utilizing the computationally intensive pandas.datafrane.ioc() operation
@@ -392,7 +416,6 @@ class TrainTripletFaceGenerator(TripletFaceIterator):
     def __next__(self):
         if self.a == 1:
             self.training_triplets = self._generate_triplets()
-            self.a = 0
             return TripletsFaceDataset(self.training_triplets, self.root_dir, self.transform)
         else:
             raise StopIteration
@@ -409,7 +432,7 @@ class ValidTripletFaceGenerator(TripletFaceIterator):
   
     def __next__(self):
         if self.a == 1:
-            self.a = 0
+            
             return self.valid_data
             
         else:
