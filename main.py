@@ -58,7 +58,8 @@ if __name__ == "__main__":
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    model = SiameseNetwork( backbone= MobileNetV2Triplet).to(device=device)
+    
+    model = SiameseNetwork( backbone= MobileNetV2Triplet,  distance_measure = L2Distance, margin=0.1).to(device=device)
     
     train_dataset_iterator = TrainTripletFaceGenerator(
             root_dir= train_root,
@@ -77,9 +78,9 @@ if __name__ == "__main__":
             transform=transform
             )
     
-    trainer = Trainer( train_iterator = train_dataset_iterator, valid_iterator = valid_dataset_iterator, model = model, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, distance_measure= L2Distance, log_dir=".")
+    trainer = Trainer( train_iterator = train_dataset_iterator, valid_iterator = valid_dataset_iterator, model = model, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, device = device,log_dir=".")
     
     #Then i am training the model.
-    trainer.train(epochs= 2, batch_size = batch_size, num_workers= None,validate_every=1)
+    trainer.train(epochs= 2, batch_size = batch_size, num_workers= 1,validate_every=1)
     
     

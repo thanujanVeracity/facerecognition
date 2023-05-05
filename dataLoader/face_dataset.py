@@ -233,12 +233,12 @@ class TripletFaceIterator:
 
             #Randomly choose a set of human identities
             classesPerBatch = np.random.choice(classes, size=self.num_human_identities_per_batch, replace=False)
-            print("\nClasses per batch".format(classesPerBatch))
+            # print("\nClasses per batch".format(classesPerBatch))
 
 
             # Traverse through the whole batch size
             for triplet in range(self.triplet_batch_size):
-                print("generating triplet number {}".format(triplet))
+                # print("generating triplet number {}".format(triplet))
                 
                 #randomly choose a possitive class and a negative calss
                 pos_class = np.random.choice( classesPerBatch )
@@ -291,13 +291,13 @@ class TripletFaceIterator:
                 )
         
 
-        print("Saving training triplets list in 'datasets/generated_triplets' directory ...")
-        np.save('datasets/generated_triplets/epoch_{}_training_triplets_{}_identities_{}_batch_{}.npy'.format(
-                1, self.num_triplets, self.num_human_identities_per_batch, self.triplet_batch_size
-            ),triplets
-        )
+        # print("Saving training triplets list in 'datasets/generated_triplets' directory ...")
+        # np.save('datasets/generated_triplets/epoch_{}_training_triplets_{}_identities_{}_batch_{}.npy'.format(
+        #         1, self.num_triplets, self.num_human_identities_per_batch, self.triplet_batch_size
+        #     ),triplets
+        # )
 
-        print("Training triplets' list Saved!\n")
+        # print("Training triplets' list Saved!\n")
 
         return triplets
     
@@ -382,8 +382,8 @@ class TripletFaceIterator:
 
 
 class TrainTripletFaceGenerator(TripletFaceIterator):
-    def __init__(self):
-        super(TripletFaceIterator, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(TrainTripletFaceGenerator, self).__init__(*args, **kwargs)
         
     def __iter__(self):
       self.a = 1
@@ -398,8 +398,8 @@ class TrainTripletFaceGenerator(TripletFaceIterator):
             raise StopIteration
         
 class ValidTripletFaceGenerator(TripletFaceIterator):
-    def __init__(self):
-        super(TripletFaceIterator, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(ValidTripletFaceGenerator, self).__init__(*args, **kwargs)
         self.training_triplets = self._generate_triplets()
         self.valid_data =  TripletsFaceDataset(self.training_triplets, self.root_dir, self.transform)
         
