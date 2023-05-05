@@ -106,6 +106,7 @@ class TripletFaceIterator:
                 steps_per_epoch: int,
                 batch_size: int,
                 num_human_identities_per_batch: int,
+                
                 triplets_file=None, 
                 transform=None):
         self.a = 1
@@ -346,17 +347,7 @@ class TripletFaceIterator:
 
         return dataframe
 
-    def __iter__(self):
-      self.a = 1
-      return self
-  
-    def __next__(self):
-        if self.a == 1:
-            self.training_triplets = self._generate_triplets()
-            self.a = 0
-            return TripletsFaceDataset(self.training_triplets, self.root_dir, self.transform)
-        else:
-            raise StopIteration
+    
         
     # def get_dir_detail_df(self):
     #     return self.dir_detail_df
@@ -390,7 +381,40 @@ class TripletFaceIterator:
 
 
 
-
+class TrainTripletFaceGenerator(TripletFaceIterator):
+    def __init__(self):
+        super(TripletFaceIterator, self).__init__()
+        
+    def __iter__(self):
+      self.a = 1
+      return self
+  
+    def __next__(self):
+        if self.a == 1:
+            self.training_triplets = self._generate_triplets()
+            self.a = 0
+            return TripletsFaceDataset(self.training_triplets, self.root_dir, self.transform)
+        else:
+            raise StopIteration
+        
+class ValidTripletFaceGenerator(TripletFaceIterator):
+    def __init__(self):
+        super(TripletFaceIterator, self).__init__()
+        self.training_triplets = self._generate_triplets()
+        self.valid_data =  TripletsFaceDataset(self.training_triplets, self.root_dir, self.transform)
+        
+    def __iter__(self):
+      self.a = 1
+      return self
+  
+    def __next__(self):
+        if self.a == 1:
+            self.a = 0
+            return self.valid_data
+            
+        else:
+            raise StopIteration
+    
 
 
 

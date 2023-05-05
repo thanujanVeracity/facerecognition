@@ -17,15 +17,15 @@ from torch.utils.data import Dataset
 from losses.loss import TripletLoss
 
 class Trainer:
-    def __init__(self,  train_data: Dataset, valid_data: Dataset ,model: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, device, num_workers=1, log_dir=None):
+    def __init__(self,  train_iterator: Dataset, valid_iterator: Dataset ,model: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, device, num_workers=1, log_dir=None):
         
-        self.train_data = train_data
-        self.valid_data = valid_data
+        self.train_iterator = train_iterator
+        self.valid_iterator = valid_iterator
         self.loss = loss(margin)
         self.model = model
         self.optimizer = optimizer("./optimizer/optimizer_config.yaml").get_optimizer(params=self.model.parameters())
         self.device = device
-        
+    
     def _train_epoch(self, epoch, batch_size, num_workers):
         # Set the model to train mode(this is the default)
         self.model.train()
@@ -39,21 +39,16 @@ class Trainer:
         # So I need to generate a new set of triplets from the unseen data directory for the validation.
         
         
-        train_dataloader = DataLoader(dataset = self.train_data,
+        train_dataloader = DataLoader(dataset = next(self.train_iterator),
             batch_size = batch_size,
             num_workers = num_workers,
             shuffle=False)
         
-
+        losses = []
         num_valid_training_triplets = 0
         
         # Loop through the batches
         for batch, (sample) in enumerate(tqdm(train_dataloader)):
-            
-            
-            
-            print("Training on batch {}".format(batch))
-            
             
 
             # Take anchor possitve and negative images
@@ -74,10 +69,10 @@ class Trainer:
             
             # Calculate the triplet loss
             loss = self.loss.forward(pos_dist, neg_dist)
+            losses.append(loss)
             
             # Calculating number of triplets that met the triplet selection method during the epoch
             num_valid_training_triplets += len(pos_dist)
-            
 
             
             #Zero the optimier gradients (they accumulate by default)
@@ -88,16 +83,25 @@ class Trainer:
 
             # Step the optimizer (gradient decent)
             self.optimizer.step()
+        
+         # Print training statistics for epoch and add to log
+        print('Epoch {}:\tNumber of valid training triplets in epoch: {}\t AverageLoss {}'.format(
+                epoch,
+                num_valid_training_triplets,
+                torch.mean(losses)
+            )
+        )
             
     def _valid_epoch(self, epoch, batch_size, num_workers):
         # Set the model to evaluate mode
         self.model.eval()
         metric = []
         losses = []
+        num_valid_validating_triplets = 0
         
-        valid_dataloader = DataLoader(dataset = self.valid_data,
-            batch_size = self.batch_size,
-            num_workers = self.num_workers,
+        valid_dataloader = DataLoader(dataset = next(self.valid_iterator),
+            batch_size = batch_size,
+            num_workers = num_workers,
             shuffle=False)
         
         
@@ -120,11 +124,19 @@ class Trainer:
             loss = self.loss.forward(pos_dist, neg_dist)
             
             losses.append(loss)
+            num_valid_validating_triplets += len(pos_dist)
             # metric.append()
+         # Print training statistics for epoch and add to log
+        print('Epoch {}:\tNumber of valid training triplets in epoch: {}\t AverageLoss {}'.format(
+                epoch,
+                num_valid_validating_triplets,
+                torch.mean(losses)
+            )
+        )
             
         
     # Train time!
-    def train(self ,epochs, validate_every):
+    def train(self ,epochs, batch_size, num_workers, validate_every):
         
         generate = True
         
@@ -133,11 +145,9 @@ class Trainer:
         for epoch in range(epochs):
             
 
-            num_valid_training_triplets = 0
-            
             
             # Train the model for one epoch
-            self._train_epoch(epoch=epoch)
+            self._train_epoch(epoch=epoch, batch_size= batch_size, num_workers= num_workers)
             
             if (epoch % validate_every )and (self.valid_data != None) == 0:
                 
@@ -145,17 +155,12 @@ class Trainer:
                 self.model.eval()
                         
                 with torch.no_grad():
-                    self._valid_epoch(epoch=epoch)   
+                    self._valid_epoch(epoch=epoch, batch_size= batch_size, num_workers= num_workers)   
                     
 
             
         
-            # Print training statistics for epoch and add to log
-            print('Epoch {}:\tNumber of valid training triplets in epoch: {}'.format(
-                    epoch,
-                    num_valid_training_triplets
-                )
-            )
+           
 
             return
         

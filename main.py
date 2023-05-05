@@ -3,13 +3,14 @@ from torchvision import transforms
 from optimizer.adam_optimizer import AdamOptimizer
 from train import Trainer
 # from dataLoader.face_dataloader import FaceDataLoader
-from dataLoader.face_dataset import TripletFaceIterator
+from dataLoader.face_dataset import TrainTripletFaceGenerator, ValidTripletFaceGenerator
 from losses.loss import TripletLoss
 from distance_measure.distance_measure import L2Distance
 from models.mobilenetv2 import MobileNetV2Triplet
 from SiameseNetwork import SiameseNetwork
 import argparse
 import torch
+
 
 if __name__ == "__main__":
     
@@ -48,6 +49,7 @@ if __name__ == "__main__":
     # dataloader = FaceDataLoader( dataset_dir, 6, 2, 2,None, 0.8,0.1, transform)
     
     train_root = "./lfw_funneled/train"
+    valid_root = "./lfw_funneled/valid"
     
     steps_per_epoch = 3
     batch_size = 3
@@ -58,7 +60,7 @@ if __name__ == "__main__":
     
     model = SiameseNetwork( backbone= MobileNetV2Triplet).to(device=device)
     
-    dataset_iterator = TripletFaceIterator(
+    train_dataset_iterator = TrainTripletFaceGenerator(
             root_dir= train_root,
             csv_name=os.path.join(train_root, "train.csv"),
             steps_per_epoch = steps_per_epoch,
@@ -66,10 +68,18 @@ if __name__ == "__main__":
             num_human_identities_per_batch=batch_size,
             transform=transform
             )
+    valid_dataset_iterator = ValidTripletFaceGenerator(
+            root_dir= valid_root,
+            csv_name=os.path.join(valid_root, "valid.csv"),
+            steps_per_epoch = steps_per_epoch,
+            batch_size= batch_size,
+            num_human_identities_per_batch=batch_size,
+            transform=transform
+            )
     
-    trainer = Trainer( train_data= next(dataset_iterator), valid_data = None, batch_size = batch_size,  backbone= MobileNetV2Triplet, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, distance_measure= L2Distance, device="cpu" ,log_dir=".")
+    trainer = Trainer( train_iterator = train_dataset_iterator, valid_iterator = valid_dataset_iterator, model = model, loss= TripletLoss, margin=0.1, optimizer=AdamOptimizer, distance_measure= L2Distance, log_dir=".")
     
     #Then i am training the model.
-    trainer.train(epochs= 2, validate_every=1)
+    trainer.train(epochs= 2, batch_size = batch_size, num_workers= None,validate_every=1)
     
     
