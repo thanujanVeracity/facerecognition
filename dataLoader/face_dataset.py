@@ -22,7 +22,7 @@ import sys
 
 class TripletsFaceDataset(Dataset):
     
-    def __init__(self, triplets: list):
+    def __init__(self, triplets: list, root_dir : str, transform):
         """This class implements tr
 
         Args:
@@ -30,12 +30,14 @@ class TripletsFaceDataset(Dataset):
         """
         
         self.triplets = triplets
+        self.root_dir = root_dir
+        self.transform = transform
         
         return
         
     def __len__(self):
-        if self.training_triplets:
-            return len(self.training_triplets)
+        if self.triplets:
+            return len(self.triplets)
         else:
             return 0
     
@@ -60,10 +62,10 @@ class TripletsFaceDataset(Dataset):
  
     
     def __getitem__(self, idx):
-        if self.training_triplets:
+        if self.triplets:
             
 
-            anc_id, pos_id, neg_id, pos_class, neg_class, pos_name, neg_name = self.training_triplets[idx]
+            anc_id, pos_id, neg_id, pos_class, neg_class, pos_name, neg_name = self.triplets[idx]
 
             anc_img = self._add_extension(os.path.join(self.root_dir, str(pos_name), str(anc_id)))
             pos_img = self._add_extension(os.path.join(self.root_dir, str(pos_name), str(pos_id)))
@@ -352,7 +354,7 @@ class TripletFaceIterator:
         if self.a == 1:
             self.training_triplets = self._generate_triplets()
             self.a = 0
-            return TripletsFaceDataset(self.training_triplets)
+            return TripletsFaceDataset(self.training_triplets, self.root_dir, self.transform)
         else:
             raise StopIteration
         

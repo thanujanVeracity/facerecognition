@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 from tqdm import tqdm
 # from dataLoader.face_dataset import TripletFaceDatset
 from distance_measure.distance_measure import DistanceMeasure, L2Distance
-from SiameseNetwork import SiameseNetwork
+
 from losses.loss import Loss
 from torch.utils.data import DataLoader
 from optimizer.base_optimizer import BaseOptimizer
@@ -17,19 +17,16 @@ from torch.utils.data import Dataset
 from losses.loss import TripletLoss
 
 class Trainer:
-    def __init__(self,  train_data: Dataset, valid_data: Dataset, batch_size: int ,backbone: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, distance_measure: DistanceMeasure, device, num_workers=1, log_dir=None):
+    def __init__(self,  train_data: Dataset, valid_data: Dataset ,model: nn.Module, loss: Loss, margin: float, optimizer: BaseOptimizer, device, num_workers=1, log_dir=None):
         
-        self.batch_size = batch_size
         self.train_data = train_data
         self.valid_data = valid_data
-        self.num_workers = num_workers
-        self.distance_measure = distance_measure
         self.loss = loss(margin)
-        self.model = SiameseNetwork( backbone= backbone, distance_measure = self.distance_measure, margin=margin).to(device=device)
+        self.model = model
         self.optimizer = optimizer("./optimizer/optimizer_config.yaml").get_optimizer(params=self.model.parameters())
         self.device = device
         
-    def _train_epoch(self, epoch):
+    def _train_epoch(self, epoch, batch_size, num_workers):
         # Set the model to train mode(this is the default)
         self.model.train()
         
@@ -43,8 +40,8 @@ class Trainer:
         
         
         train_dataloader = DataLoader(dataset = self.train_data,
-            batch_size = self.batch_size,
-            num_workers = self.num_workers,
+            batch_size = batch_size,
+            num_workers = num_workers,
             shuffle=False)
         
 
@@ -92,7 +89,7 @@ class Trainer:
             # Step the optimizer (gradient decent)
             self.optimizer.step()
             
-    def _valid_epoch(self, epoch):
+    def _valid_epoch(self, epoch, batch_size, num_workers):
         # Set the model to evaluate mode
         self.model.eval()
         metric = []

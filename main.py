@@ -7,8 +7,9 @@ from dataLoader.face_dataset import TripletFaceIterator
 from losses.loss import TripletLoss
 from distance_measure.distance_measure import L2Distance
 from models.mobilenetv2 import MobileNetV2Triplet
+from SiameseNetwork import SiameseNetwork
 import argparse
-
+import torch
 
 if __name__ == "__main__":
     
@@ -48,9 +49,14 @@ if __name__ == "__main__":
     
     train_root = "./lfw_funneled/train"
     
-    steps_per_epoch = 32
-    batch_size = 32
-    num_human_identities_per_batch = 32
+    steps_per_epoch = 3
+    batch_size = 3
+    num_human_identities_per_batch = 3
+    margin =0.1
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    model = SiameseNetwork( backbone= MobileNetV2Triplet).to(device=device)
     
     dataset_iterator = TripletFaceIterator(
             root_dir= train_root,
